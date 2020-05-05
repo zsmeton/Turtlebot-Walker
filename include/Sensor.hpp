@@ -40,6 +40,9 @@
  */
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
+#include <vector>
+
+# define M_PI           3.14159265358979323846  /* pi */
 
 /**
  * @brief Class Sensor
@@ -50,7 +53,12 @@
 class Sensor{
  private:
   bool collisionFlag;
+  float collisionAngle;
 
+  float minAngle;
+  float maxAngle;
+  float collDist;
+  
  public:
   /**
    * @brief constructor Sensor
@@ -81,4 +89,10 @@ class Sensor{
    * Return the current value of collisionFlag
    */
   bool returnCollisionFlag();
+  /**
+   * @brief gets the last collision angle
+   * 
+   * @return float collision angle (0 is on right side of robot, pi is left)
+   */
+  float returnCollisionAngle();
 };

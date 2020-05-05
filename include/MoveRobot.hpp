@@ -45,6 +45,8 @@
 #include "sensor_msgs/LaserScan.h"
 #include "geometry_msgs/Twist.h"
 #include "Sensor.hpp"
+#include <cstdlib>
+
 /**
  * @brief Class MoveRobot
  * class to publish velocity commands to turtlebot

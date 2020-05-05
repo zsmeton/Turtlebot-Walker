@@ -47,9 +47,9 @@ MoveRobot::MoveRobot() {
   vel.angular.x = 0.0;
   vel.angular.y = 0.0;
   vel.angular.z = 0.0;
-  pub = nh.advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity",
+  pub = nh.advertise<geometry_msgs::Twist>("cmd_vel",
                                            100);
-  sub = nh.subscribe<sensor_msgs::LaserScan>("/scan", 50, &Sensor::scanCb,
+  sub = nh.subscribe<sensor_msgs::LaserScan>("scan", 50, &Sensor::scanCb,
                                              &scan);
   pub.publish(vel);
 }
@@ -66,12 +66,32 @@ MoveRobot::~MoveRobot() {
 
 void MoveRobot::publishVelocity() {
   if (scan.returnCollisionFlag() == true) {
-    // Rotate CCW if collision is detected.
-    vel.linear.x = 0.0;
-    vel.angular.z = 1.0;
+    float collAngle = scan.returnCollisionAngle();
+    // Rotate CW and backwards if collision is detected.
+    ROS_INFO_STREAM("Collision at angle " << collAngle);
+    if(collAngle < M_PI/2.0){
+      // Collision front right
+      vel.linear.x = -0.3;
+      vel.angular.z = -1.0;
+    }else if (collAngle >= M_PI/2.0 && collAngle < M_PI) {
+      // Collision on front left
+      vel.linear.x = -0.3;
+      vel.angular.z = 1.0;
+    }else if (collAngle >= M_PI && collAngle < 3.0*M_PI/2.0){
+      // Collision on rear left
+      vel.linear.x = 0.3;
+      vel.angular.z = -1.0;
+    }else{
+      // Collision on rear right
+      vel.linear.x = 0.3;
+      vel.angular.z = 1.0;
+    }
+  
   } else {
+    sleep(1);
     // Move forward if no collision is detected
-    vel.linear.x = 0.5;
+    vel.linear.x = -0.5;
+    // With some random twist
     vel.angular.z = 0.0;
   }
   pub.publish(vel);

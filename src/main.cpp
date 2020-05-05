@@ -40,6 +40,8 @@
 #include "ros/ros.h"
 #include "Sensor.hpp"
 #include "MoveRobot.hpp"
+#include <cstdlib>
+#include <ctime>
 
 /**
  * @brief    main function
@@ -49,7 +51,8 @@
  */
 
 int main(int argc, char* argv[]) {
-  ros::init(argc, argv, "Walker");
+  srand (static_cast <unsigned> (time(0)));
+  ros::init(argc, argv, "walker");
   MoveRobot control;
   ros::Rate loopRate(10);
   while (ros::ok()) {

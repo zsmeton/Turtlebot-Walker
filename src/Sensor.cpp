@@ -41,25 +41,96 @@
 
 Sensor::Sensor() {
   collisionFlag = false;
+  collisionAngle = 0.0;
+  minAngle = 0.0;
+  maxAngle = 2*M_PI;
+  collDist = 0.3;
 }
 
 Sensor::~Sensor() {
 
 }
 
+
+
 void Sensor::scanCb(const sensor_msgs::LaserScan::ConstPtr& scan) {
+  std::vector<bool> collisions;
+
+  // Collision Detect
+  bool coll = false;
+  float angle = scan->angle_min;
   for (int i = 0; i < scan->ranges.size(); i++) {
-    if (scan->ranges[i] < 1.0) {
-      collisionFlag = true;
-      ROS_DEBUG_STREAM("Range "<<scan->ranges[i]<<". Collision imminent!");
-      return;
+    if(angle > this->minAngle && angle < maxAngle){
+      if (scan->ranges[i] < this->collDist) {
+        coll = true;
+        collisions.push_back(true);
+      }
+      collisions.push_back(false);
     }
+    angle += scan->angle_increment;
   }
-  collisionFlag = false;
+
+  
+
+  // Find angle of collision
+  int best_consec_coll = 0;
+  float best_start_angle = 0;
+  float best_end_angle = 0;
+
+  int curr_consec_coll = 0;
+  float curr_start_angle = 0;
+  float curr_end_angle = 0;
+  bool consec = false;
+
+  // Iterate over collisions while incrementing angle
+  // If collision and ! consec, consec = true, curr_start and end angle = angle, curr consec = 1
+  // If collision and consec, curr end angle = angle, curr consec ++, see if curr is best
+  // If !collision and consec, consec = false, 
+  if(coll){
+    angle = scan->angle_min;
+    for (int i = 0; i < collisions.size(); i++) {
+      if(collisions.at(i)){
+        // If collidid and not a consec, start consec
+        if(!consec){
+          consec = true;
+          curr_start_angle = angle;
+          curr_end_angle = angle;
+          curr_consec_coll = 1;
+        }else{
+          // Otherwise update consec and check if current consec is best
+          curr_consec_coll ++;
+          curr_end_angle = angle;
+
+          if(best_consec_coll < curr_consec_coll){
+            best_start_angle = curr_start_angle;
+            best_end_angle = curr_end_angle;
+            best_consec_coll = curr_consec_coll;
+          }
+        }
+      }else if(consec){
+        // If there isn't a collision at the next index consec = false
+        if(!collisions.at((i+1) % collisions.size())){
+          // Set consec to false 
+          consec = false; 
+        }
+      }
+
+      angle += scan->angle_increment;
+    }
+
+    // Set angle of collision to the middle of best coll
+    this->collisionAngle = (best_end_angle + best_start_angle) / 2.0;
+  }
+
+  collisionFlag = coll;
   ROS_DEBUG_STREAM("No collisions.");
 }
 
 bool Sensor::returnCollisionFlag() {
   return collisionFlag;
+}
+
+float Sensor::returnCollisionAngle(){
+  return collisionAngle;
 }
 
